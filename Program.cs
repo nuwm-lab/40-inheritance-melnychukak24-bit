@@ -2,14 +2,22 @@ using System;
 
 /// <summary>
 /// Базовий клас для роботи з системою векторів.
-/// Дозволяє зберігати та перевіряти лінійну незалежність.
+/// Містить спільну логіку для виводу та допоміжних обчислень.
 /// </summary>
 abstract class VectorSystem
 {
-    protected double[][] Vectors;
+    /// <summary>
+    /// Вектори системи.
+    /// </summary>
+    protected double[][] Vectors { get; protected set; }
 
     /// <summary>
-    /// Вивід векторів у консоль.
+    /// Константа для порівняння з нулем при обчисленнях.
+    /// </summary>
+    protected const double Epsilon = 1e-9;
+
+    /// <summary>
+    /// Виводить усі вектори на екран.
     /// </summary>
     public virtual void PrintVectors()
     {
@@ -20,12 +28,12 @@ abstract class VectorSystem
     }
 
     /// <summary>
-    /// Перевіряє, чи є вектори лінійно незалежними.
+    /// Перевіряє, чи є вектори системи лінійно незалежними.
     /// </summary>
     public abstract bool IsLinearlyIndependent();
 
     /// <summary>
-    /// Допоміжний метод: обчислення визначника матриці 2х2.
+    /// Обчислює визначник матриці 2x2.
     /// </summary>
     protected double Determinant2x2(double[,] m)
     {
@@ -33,7 +41,7 @@ abstract class VectorSystem
     }
 
     /// <summary>
-    /// Допоміжний метод: обчислення визначника матриці 3х3.
+    /// Обчислює визначник матриці 3x3.
     /// </summary>
     protected double Determinant3x3(double[,] m)
     {
@@ -45,41 +53,44 @@ abstract class VectorSystem
 }
 
 /// <summary>
-/// Клас для роботи з 2D векторами.
+/// Система з двох векторів у 2D.
 /// </summary>
 class Vector2System : VectorSystem
 {
     public Vector2System(double[] a, double[] b)
     {
-        if (a.Length != 2 || b.Length != 2)
-            throw new ArgumentException("Усі вектори мають бути розмірності 2.");
+        if (a == null || b == null || a.Length != 2 || b.Length != 2)
+            throw new ArgumentException("Усі вектори мають бути непорожніми та розмірності 2.");
 
         Vectors = new double[2][] { a, b };
     }
 
+    /// <inheritdoc/>
     public override bool IsLinearlyIndependent()
     {
         double[,] matrix = {
             { Vectors[0][0], Vectors[0][1] },
             { Vectors[1][0], Vectors[1][1] }
         };
-        return Math.Abs(Determinant2x2(matrix)) > 1e-9;
+        return Math.Abs(Determinant2x2(matrix)) > Epsilon;
     }
 }
 
 /// <summary>
-/// Клас для роботи з 3D векторами.
+/// Система з трьох векторів у 3D.
 /// </summary>
 class Vector3System : VectorSystem
 {
     public Vector3System(double[] a, double[] b, double[] c)
     {
-        if (a.Length != 3 || b.Length != 3 || c.Length != 3)
-            throw new ArgumentException("Усі вектори мають бути розмірності 3.");
+        if (a == null || b == null || c == null ||
+            a.Length != 3 || b.Length != 3 || c.Length != 3)
+            throw new ArgumentException("Усі вектори мають бути непорожніми та розмірності 3.");
 
         Vectors = new double[3][] { a, b, c };
     }
 
+    /// <inheritdoc/>
     public override bool IsLinearlyIndependent()
     {
         double[,] matrix = {
@@ -87,7 +98,7 @@ class Vector3System : VectorSystem
             { Vectors[1][0], Vectors[1][1], Vectors[1][2] },
             { Vectors[2][0], Vectors[2][1], Vectors[2][2] }
         };
-        return Math.Abs(Determinant3x3(matrix)) > 1e-9;
+        return Math.Abs(Determinant3x3(matrix)) > Epsilon;
     }
 }
 
