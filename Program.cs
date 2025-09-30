@@ -3,7 +3,7 @@
 class SystemOf2Vectors
 {
     protected double[] A = new double[2];
-    protected double[] B = new double[2];
+    protected double[] B = new double[2];//
 
 
     public void SetVectors(double a1, double a2, double b1, double b2)
