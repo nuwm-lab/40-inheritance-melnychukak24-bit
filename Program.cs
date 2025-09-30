@@ -5,9 +5,21 @@ using System.Linq;
 namespace LinearIndependence
 {
     /// <summary>
-    /// Абстрактний клас для представлення системи векторів.
+    /// Інтерфейс для систем векторів.
     /// </summary>
-    abstract class VectorSystem
+    public interface ILinearSystem
+    {
+        /// <summary>
+        /// Перевіряє, чи система векторів є лінійно незалежною.
+        /// </summary>
+        /// <returns>true – якщо незалежні, false – якщо залежні.</returns>
+        bool IsLinearlyIndependent();
+    }
+
+    /// <summary>
+    /// Абстрактний базовий клас для представлення системи векторів.
+    /// </summary>
+    abstract class VectorSystem : ILinearSystem
     {
         /// <summary>
         /// Список векторів системи.
@@ -26,22 +38,21 @@ namespace LinearIndependence
 
             Vectors = vectors.Select(v =>
             {
-                if (v == null) throw new ArgumentException("Вектор не може бути null.");
+                if (v == null) 
+                    throw new ArgumentException("Вектор не може бути null.");
                 return v.ToArray();
             }).ToList();
         }
 
-        /// <summary>
-        /// Перевірка, чи система є лінійно незалежною.
-        /// </summary>
+        /// <inheritdoc />
         public abstract bool IsLinearlyIndependent();
 
         /// <summary>
-        /// Перевірка, чи вектор є нульовим.
+        /// Перевіряє, чи в системі присутні нульові вектори.
         /// </summary>
-        protected static bool IsZeroVector(double[] vector)
+        protected bool ContainsZeroVector()
         {
-            return vector.All(x => Math.Abs(x) < Epsilon);
+            return Vectors.Any(v => v.All(x => Math.Abs(x) < Epsilon));
         }
     }
 
@@ -54,11 +65,14 @@ namespace LinearIndependence
         {
             if (Vectors.Any(v => v.Length != 2))
                 throw new ArgumentException("Усі вектори мають бути розмірності 2.");
+            if (Vectors.Count < 2)
+                throw new ArgumentException("Система векторів у 2D має містити щонайменше два вектори.");
         }
 
+        /// <inheritdoc />
         public override bool IsLinearlyIndependent()
         {
-            if (Vectors.Any(IsZeroVector)) return false;
+            if (ContainsZeroVector()) return false;
 
             double[,] matrixForDeterminant =
             {
@@ -70,7 +84,7 @@ namespace LinearIndependence
         }
 
         /// <summary>
-        /// Обчислення визначника 2x2.
+        /// Обчислює визначник 2x2 матриці.
         /// </summary>
         private static double Determinant2x2(double[,] matrixForDeterminant)
         {
@@ -88,11 +102,14 @@ namespace LinearIndependence
         {
             if (Vectors.Any(v => v.Length != 3))
                 throw new ArgumentException("Усі вектори мають бути розмірності 3.");
+            if (Vectors.Count < 3)
+                throw new ArgumentException("Система векторів у 3D має містити щонайменше три вектори.");
         }
 
+        /// <inheritdoc />
         public override bool IsLinearlyIndependent()
         {
-            if (Vectors.Any(IsZeroVector)) return false;
+            if (ContainsZeroVector()) return false;
 
             double[,] matrixForDeterminant =
             {
@@ -105,7 +122,7 @@ namespace LinearIndependence
         }
 
         /// <summary>
-        /// Обчислення визначника 3x3.
+        /// Обчислює визначник 3x3 матриці.
         /// </summary>
         private static double Determinant3x3(double[,] matrixForDeterminant)
         {
@@ -137,8 +154,10 @@ namespace LinearIndependence
         }
 
         /// <summary>
-        /// Виведення результату у консоль.
+        /// Виводить результат перевірки лінійної незалежності векторів.
         /// </summary>
+        /// <param name="dimension">Розмірність (наприклад, "2D", "3D").</param>
+        /// <param name="isIndependent">Результат перевірки незалежності.</param>
         private static void PrintResult(string dimension, bool isIndependent)
         {
             Console.WriteLine($"{dimension} вектори є {(isIndependent ? "лінійно незалежними" : "лінійно залежними")}");
