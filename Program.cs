@@ -1,132 +1,147 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
-/// <summary>
-/// Базовий клас для роботи з системою векторів.
-/// Містить спільну логіку для виводу та допоміжних обчислень.
-/// </summary>
-abstract class VectorSystem
+namespace LinearIndependence
 {
     /// <summary>
-    /// Вектори системи.
+    /// Абстрактний клас для представлення системи векторів.
     /// </summary>
-    protected double[][] Vectors { get; protected set; }
-
-    /// <summary>
-    /// Константа для порівняння з нулем при обчисленнях.
-    /// </summary>
-    protected const double Epsilon = 1e-9;
-
-    /// <summary>
-    /// Виводить усі вектори на екран.
-    /// </summary>
-    public virtual void PrintVectors()
+    abstract class VectorSystem
     {
-        for (int i = 0; i < Vectors.Length; i++)
+        /// <summary>
+        /// Список векторів системи.
+        /// </summary>
+        protected List<double[]> Vectors { get; }
+
+        /// <summary>
+        /// Допустима похибка для перевірки незалежності.
+        /// </summary>
+        protected const double Epsilon = 1e-9;
+
+        protected VectorSystem(IEnumerable<IEnumerable<double>> vectors)
         {
-            Console.WriteLine($"V{i + 1} = ({string.Join(", ", Vectors[i])})");
+            if (vectors == null || !vectors.Any())
+                throw new ArgumentException("Система векторів не може бути порожньою.");
+
+            Vectors = vectors.Select(v =>
+            {
+                if (v == null) throw new ArgumentException("Вектор не може бути null.");
+                return v.ToArray();
+            }).ToList();
+        }
+
+        /// <summary>
+        /// Перевірка, чи система є лінійно незалежною.
+        /// </summary>
+        public abstract bool IsLinearlyIndependent();
+
+        /// <summary>
+        /// Перевірка, чи вектор є нульовим.
+        /// </summary>
+        protected static bool IsZeroVector(double[] vector)
+        {
+            return vector.All(x => Math.Abs(x) < Epsilon);
         }
     }
 
     /// <summary>
-    /// Перевіряє, чи є вектори системи лінійно незалежними.
+    /// Клас для роботи з системою векторів у 2D.
     /// </summary>
-    public abstract bool IsLinearlyIndependent();
+    class Vector2System : VectorSystem
+    {
+        public Vector2System(IEnumerable<IEnumerable<double>> vectors) : base(vectors)
+        {
+            if (Vectors.Any(v => v.Length != 2))
+                throw new ArgumentException("Усі вектори мають бути розмірності 2.");
+        }
+
+        public override bool IsLinearlyIndependent()
+        {
+            if (Vectors.Any(IsZeroVector)) return false;
+
+            double[,] matrixForDeterminant =
+            {
+                { Vectors[0][0], Vectors[1][0] },
+                { Vectors[0][1], Vectors[1][1] }
+            };
+
+            return Math.Abs(Determinant2x2(matrixForDeterminant)) > Epsilon;
+        }
+
+        /// <summary>
+        /// Обчислення визначника 2x2.
+        /// </summary>
+        private static double Determinant2x2(double[,] matrixForDeterminant)
+        {
+            return matrixForDeterminant[0, 0] * matrixForDeterminant[1, 1]
+                 - matrixForDeterminant[0, 1] * matrixForDeterminant[1, 0];
+        }
+    }
 
     /// <summary>
-    /// Обчислює визначник матриці 2x2.
+    /// Клас для роботи з системою векторів у 3D.
     /// </summary>
-    protected double Determinant2x2(double[,] m)
+    class Vector3System : VectorSystem
     {
-        return m[0, 0] * m[1, 1] - m[0, 1] * m[1, 0];
+        public Vector3System(IEnumerable<IEnumerable<double>> vectors) : base(vectors)
+        {
+            if (Vectors.Any(v => v.Length != 3))
+                throw new ArgumentException("Усі вектори мають бути розмірності 3.");
+        }
+
+        public override bool IsLinearlyIndependent()
+        {
+            if (Vectors.Any(IsZeroVector)) return false;
+
+            double[,] matrixForDeterminant =
+            {
+                { Vectors[0][0], Vectors[1][0], Vectors[2][0] },
+                { Vectors[0][1], Vectors[1][1], Vectors[2][1] },
+                { Vectors[0][2], Vectors[1][2], Vectors[2][2] }
+            };
+
+            return Math.Abs(Determinant3x3(matrixForDeterminant)) > Epsilon;
+        }
+
+        /// <summary>
+        /// Обчислення визначника 3x3.
+        /// </summary>
+        private static double Determinant3x3(double[,] matrixForDeterminant)
+        {
+            return matrixForDeterminant[0, 0] * (matrixForDeterminant[1, 1] * matrixForDeterminant[2, 2] - matrixForDeterminant[1, 2] * matrixForDeterminant[2, 1])
+                 - matrixForDeterminant[0, 1] * (matrixForDeterminant[1, 0] * matrixForDeterminant[2, 2] - matrixForDeterminant[1, 2] * matrixForDeterminant[2, 0])
+                 + matrixForDeterminant[0, 2] * (matrixForDeterminant[1, 0] * matrixForDeterminant[2, 1] - matrixForDeterminant[1, 1] * matrixForDeterminant[2, 0]);
+        }
     }
 
-    /// <summary>
-    /// Обчислює визначник матриці 3x3.
-    /// </summary>
-    protected double Determinant3x3(double[,] m)
+    class Program
     {
-        return
-            m[0, 0] * (m[1, 1] * m[2, 2] - m[1, 2] * m[2, 1]) -
-            m[0, 1] * (m[1, 0] * m[2, 2] - m[1, 2] * m[2, 0]) +
-            m[0, 2] * (m[1, 0] * m[2, 1] - m[1, 1] * m[2, 0]);
-    }
-}
+        static void Main()
+        {
+            var vectorSystem2D = new Vector2System(new[]
+            {
+                new double[] { 1, 2 },
+                new double[] { 3, 4 }
+            });
 
-/// <summary>
-/// Система з двох векторів у 2D.
-/// </summary>
-class Vector2System : VectorSystem
-{
-    public Vector2System(double[] a, double[] b)
-    {
-        if (a == null || b == null || a.Length != 2 || b.Length != 2)
-            throw new ArgumentException("Усі вектори мають бути непорожніми та розмірності 2.");
+            var vectorSystem3D = new Vector3System(new[]
+            {
+                new double[] { 1, 2, 3 },
+                new double[] { 4, 5, 6 },
+                new double[] { 7, 8, 9 }
+            });
 
-        Vectors = new double[2][] { a, b };
-    }
+            PrintResult("2D", vectorSystem2D.IsLinearlyIndependent());
+            PrintResult("3D", vectorSystem3D.IsLinearlyIndependent());
+        }
 
-    /// <inheritdoc/>
-    public override bool IsLinearlyIndependent()
-    {
-        double[,] matrix = {
-            { Vectors[0][0], Vectors[0][1] },
-            { Vectors[1][0], Vectors[1][1] }
-        };
-        return Math.Abs(Determinant2x2(matrix)) > Epsilon;
-    }
-}
-
-/// <summary>
-/// Система з трьох векторів у 3D.
-/// </summary>
-class Vector3System : VectorSystem
-{
-    public Vector3System(double[] a, double[] b, double[] c)
-    {
-        if (a == null || b == null || c == null ||
-            a.Length != 3 || b.Length != 3 || c.Length != 3)
-            throw new ArgumentException("Усі вектори мають бути непорожніми та розмірності 3.");
-
-        Vectors = new double[3][] { a, b, c };
-    }
-
-    /// <inheritdoc/>
-    public override bool IsLinearlyIndependent()
-    {
-        double[,] matrix = {
-            { Vectors[0][0], Vectors[0][1], Vectors[0][2] },
-            { Vectors[1][0], Vectors[1][1], Vectors[1][2] },
-            { Vectors[2][0], Vectors[2][1], Vectors[2][2] }
-        };
-        return Math.Abs(Determinant3x3(matrix)) > Epsilon;
-    }
-}
-
-class Program
-{
-    static void Main()
-    {
-        // 2D приклад
-        var sys2 = new Vector2System(
-            new double[] { 1, 2 },
-            new double[] { 3, 4 }
-        );
-        Console.WriteLine("Система 2-х векторів:");
-        sys2.PrintVectors();
-        Console.WriteLine(sys2.IsLinearlyIndependent()
-            ? "Вектори лінійно незалежні\n"
-            : "Вектори лінійно залежні\n");
-
-        // 3D приклад
-        var sys3 = new Vector3System(
-            new double[] { 1, 0, 0 },
-            new double[] { 0, 1, 0 },
-            new double[] { 0, 0, 1 }
-        );
-        Console.WriteLine("Система 3-х векторів:");
-        sys3.PrintVectors();
-        Console.WriteLine(sys3.IsLinearlyIndependent()
-            ? "Вектори лінійно незалежні"
-            : "Вектори лінійно залежні");
+        /// <summary>
+        /// Виведення результату у консоль.
+        /// </summary>
+        private static void PrintResult(string dimension, bool isIndependent)
+        {
+            Console.WriteLine($"{dimension} вектори є {(isIndependent ? "лінійно незалежними" : "лінійно залежними")}");
+        }
     }
 }
