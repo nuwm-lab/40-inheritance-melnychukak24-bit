@@ -2,7 +2,7 @@
 
 class SystemOf2Vectors
 {
-    protected double[] A = new double[2];
+    protected double[] A = new double[2];//
     protected double[] B = new double[2];//
 
 
