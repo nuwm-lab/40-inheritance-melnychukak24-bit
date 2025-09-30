@@ -1,91 +1,166 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
-
-class SystemOf2Vectors
+namespace LinearIndependence
 {
-    
-    protected double[] A = new double[3];
-    protected double[] B = new double[3];
-
-    
-    public void SetVectors(double a1, double a2, double b1, double b2)
+    /// <summary>
+    /// Інтерфейс для систем векторів.
+    /// </summary>
+    public interface ILinearSystem
     {
-        A[0] = a1; A[1] = a2; A[2] = 0;
-        B[0] = b1; B[1] = b2; B[2] = 0;
+        /// <summary>
+        /// Перевіряє, чи система векторів є лінійно незалежною.
+        /// </summary>
+        /// <returns>true – якщо незалежні, false – якщо залежні.</returns>
+        bool IsLinearlyIndependent();
     }
 
-    
-    public void Print2DVectors()
+    /// <summary>
+    /// Абстрактний базовий клас для представлення системи векторів.
+    /// </summary>
+    abstract class VectorSystem : ILinearSystem
     {
-        Console.WriteLine($"A = ({A[0]}, {A[1]})");
-        Console.WriteLine($"B = ({B[0]}, {B[1]})");
+        /// <summary>
+        /// Список векторів системи.
+        /// </summary>
+        protected List<double[]> Vectors { get; }
+
+        /// <summary>
+        /// Допустима похибка для перевірки незалежності.
+        /// </summary>
+        protected const double Epsilon = 1e-9;
+
+        protected VectorSystem(IEnumerable<IEnumerable<double>> vectors)
+        {
+            if (vectors == null || !vectors.Any())
+                throw new ArgumentException("Система векторів не може бути порожньою.");
+
+            Vectors = vectors.Select(v =>
+            {
+                if (v == null) 
+                    throw new ArgumentException("Вектор не може бути null.");
+                return v.ToArray();
+            }).ToList();
+        }
+
+        /// <inheritdoc />
+        public abstract bool IsLinearlyIndependent();
+
+        /// <summary>
+        /// Перевіряє, чи в системі присутні нульові вектори.
+        /// </summary>
+        protected bool ContainsZeroVector()
+        {
+            return Vectors.Any(v => v.All(x => Math.Abs(x) < Epsilon));
+        }
     }
 
-    
-    public bool IsLinearlyIndependent2D()
+    /// <summary>
+    /// Клас для роботи з системою векторів у 2D.
+    /// </summary>
+    class Vector2System : VectorSystem
     {
-        double det = A[0] * B[1] - A[1] * B[0];
-        return Math.Abs(det) > 1e-9;
+        public Vector2System(IEnumerable<IEnumerable<double>> vectors) : base(vectors)
+        {
+            if (Vectors.Any(v => v.Length != 2))
+                throw new ArgumentException("Усі вектори мають бути розмірності 2.");
+            if (Vectors.Count < 2)
+                throw new ArgumentException("Система векторів у 2D має містити щонайменше два вектори.");
+        }
+
+        /// <inheritdoc />
+        public override bool IsLinearlyIndependent()
+        {
+            if (ContainsZeroVector()) return false;
+
+            double[,] matrixForDeterminant =
+            {
+                { Vectors[0][0], Vectors[1][0] },
+                { Vectors[0][1], Vectors[1][1] }
+            };
+
+            return Math.Abs(Determinant2x2(matrixForDeterminant)) > Epsilon;
+        }
+
+        /// <summary>
+        /// Обчислює визначник 2x2 матриці.
+        /// </summary>
+        private static double Determinant2x2(double[,] matrixForDeterminant)
+        {
+            return matrixForDeterminant[0, 0] * matrixForDeterminant[1, 1]
+                 - matrixForDeterminant[0, 1] * matrixForDeterminant[1, 0];
+        }
     }
-}
 
-
-class SystemOf3Vectors : SystemOf2Vectors
-{
-    private double[] C = new double[3];
-
-    
-    public void SetVectors(double a1, double a2, double a3,
-                           double b1, double b2, double b3,
-                           double c1, double c2, double c3)
+    /// <summary>
+    /// Клас для роботи з системою векторів у 3D.
+    /// </summary>
+    class Vector3System : VectorSystem
     {
-        A = new double[] { a1, a2, a3 };
-        B = new double[] { b1, b2, b3 };
-        C = new double[] { c1, c2, c3 };
+        public Vector3System(IEnumerable<IEnumerable<double>> vectors) : base(vectors)
+        {
+            if (Vectors.Any(v => v.Length != 3))
+                throw new ArgumentException("Усі вектори мають бути розмірності 3.");
+            if (Vectors.Count < 3)
+                throw new ArgumentException("Система векторів у 3D має містити щонайменше три вектори.");
+        }
+
+        /// <inheritdoc />
+        public override bool IsLinearlyIndependent()
+        {
+            if (ContainsZeroVector()) return false;
+
+            double[,] matrixForDeterminant =
+            {
+                { Vectors[0][0], Vectors[1][0], Vectors[2][0] },
+                { Vectors[0][1], Vectors[1][1], Vectors[2][1] },
+                { Vectors[0][2], Vectors[1][2], Vectors[2][2] }
+            };
+
+            return Math.Abs(Determinant3x3(matrixForDeterminant)) > Epsilon;
+        }
+
+        /// <summary>
+        /// Обчислює визначник 3x3 матриці.
+        /// </summary>
+        private static double Determinant3x3(double[,] matrixForDeterminant)
+        {
+            return matrixForDeterminant[0, 0] * (matrixForDeterminant[1, 1] * matrixForDeterminant[2, 2] - matrixForDeterminant[1, 2] * matrixForDeterminant[2, 1])
+                 - matrixForDeterminant[0, 1] * (matrixForDeterminant[1, 0] * matrixForDeterminant[2, 2] - matrixForDeterminant[1, 2] * matrixForDeterminant[2, 0])
+                 + matrixForDeterminant[0, 2] * (matrixForDeterminant[1, 0] * matrixForDeterminant[2, 1] - matrixForDeterminant[1, 1] * matrixForDeterminant[2, 0]);
+        }
     }
 
-    
-    public void Print3DVectors()
+    class Program
     {
-        Console.WriteLine($"A = ({A[0]}, {A[1]}, {A[2]})");
-        Console.WriteLine($"B = ({B[0]}, {B[1]}, {B[2]})");
-        Console.WriteLine($"C = ({C[0]}, {C[1]}, {C[2]})");
-    }
+        static void Main()
+        {
+            var vectorSystem2D = new Vector2System(new[]
+            {
+                new double[] { 1, 2 },
+                new double[] { 3, 4 }
+            });
 
-    
-    public bool IsLinearlyIndependent3D()
-    {
-        double det =
-            A[0] * (B[1] * C[2] - B[2] * C[1]) -
-            A[1] * (B[0] * C[2] - B[2] * C[0]) +
-            A[2] * (B[0] * C[1] - B[1] * C[0]);
+            var vectorSystem3D = new Vector3System(new[]
+            {
+                new double[] { 1, 2, 3 },
+                new double[] { 4, 5, 6 },
+                new double[] { 7, 8, 9 }
+            });
 
-        return Math.Abs(det) > 1e-9;
-    }
-}
+            PrintResult("2D", vectorSystem2D.IsLinearlyIndependent());
+            PrintResult("3D", vectorSystem3D.IsLinearlyIndependent());
+        }
 
-class Program
-{
-    static void Main()
-    {
-        
-        SystemOf2Vectors sys2 = new SystemOf2Vectors();
-        sys2.SetVectors(1, 2, 3, 4);
-        Console.WriteLine("Система 2-х векторів:");
-        sys2.Print2DVectors();
-        Console.WriteLine(sys2.IsLinearlyIndependent2D()
-            ? "Вектори лінійно незалежні\n"
-            : "Вектори лінійно залежні\n");
-
-        
-        SystemOf3Vectors sys3 = new SystemOf3Vectors();
-        sys3.SetVectors(1, 0, 0,
-                        0, 1, 0,
-                        0, 0, 1);
-        Console.WriteLine("Система 3-х векторів:");
-        sys3.Print3DVectors();
-        Console.WriteLine(sys3.IsLinearlyIndependent3D()
-            ? "Вектори лінійно незалежні"
-            : "Вектори лінійно залежні");
+        /// <summary>
+        /// Виводить результат перевірки лінійної незалежності векторів.
+        /// </summary>
+        /// <param name="dimension">Розмірність (наприклад, "2D", "3D").</param>
+        /// <param name="isIndependent">Результат перевірки незалежності.</param>
+        private static void PrintResult(string dimension, bool isIndependent)
+        {
+            Console.WriteLine($"{dimension} вектори є {(isIndependent ? "лінійно незалежними" : "лінійно залежними")}");
+        }
     }
 }
