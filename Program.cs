@@ -92,18 +92,3 @@ class Program
         Console.WriteLine("Система 2-х векторів:");
         sys2.Print2DVectors();
         Console.WriteLine(sys2.IsLinearlyIndependent2D()
-            ? "Вектори лінійно незалежні\n"
-            : "Вектори лінійно залежні\n");
-
-        // --- Система з 3 векторів ---
-        SystemOf3Vectors sys3 = new SystemOf3Vectors();
-        sys3.SetVectors(1, 0, 0,
-                        0, 1, 0,
-                        0, 0, 1);
-        Console.WriteLine("Система 3-х векторів:");
-        sys3.Print3DVectors();
-        Console.WriteLine(sys3.IsLinearlyIndependent3D()
-            ? "Вектори лінійно незалежні"
-            : "Вектори лінійно залежні");
-    }
-}
